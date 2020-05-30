@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "cello.h"
 
 void update_cell(cello_state *state, unsigned int x, unsigned int y)
@@ -18,16 +19,16 @@ void update_cell(cello_state *state, unsigned int x, unsigned int y)
 }
 
 void gol(unsigned int width, unsigned int height) {
-    cello_state cello;
-    cello_init(&cello, width, height, update_cell);
-    cello_randomize(&cello);
+    cello_state *cello = cello_init(width, height, update_cell);
+    cello_randomize(cello);
     
     while(1) {
-        cello_print(&cello);
-        cello_update(&cello);
-        cello_swap(&cello);
+        // Clear screen
+        printf("\e[1;1H\e[2J");
+        cello_print(cello);
+        cello_update(cello);
         usleep(100000); // .1 second
     }
     
-    cello_destroy(&cello);
+    cello_destroy(cello);
 }

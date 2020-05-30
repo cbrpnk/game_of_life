@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 
 typedef struct cello_state cello_state;
 
@@ -28,23 +29,33 @@ struct cello_state {
     void (*update_cell_fn)(cello_state *state, unsigned int x, unsigned int y);
 };
 
-void cello_init(cello_state *state, unsigned int width, unsigned int height,
-                void (*update_cell_fn)(cello_state *state,
-                                       unsigned int x,
-                                       unsigned int y)
-        )
+cello_state *cello_init(unsigned int width,
+                        unsigned int height,
+                        void (*update_cell_fn)(
+                                cello_state *state,
+                                unsigned int x,
+                                unsigned int y
+                              )
+                        )
 {
+    cello_state *state = malloc(sizeof(cello_state));
+    
     state->width = width;
     state->height = height;
     state->board = malloc(width * height * sizeof(unsigned char));
     state->current_mask = 1;
     state->next_mask    = 2;
     state->update_cell_fn = update_cell_fn;
+    
+    srand(time(NULL));
+    
+    return state;
 }
 
 void cello_destroy(cello_state *state)
 {
     free(state->board);
+    free(state);
 }
 
 void cello_randomize(cello_state *state)
@@ -79,11 +90,9 @@ void cello_set(cello_state *state, int x, int y, unsigned char v)
 
 void cello_print(cello_state *state)
 {
-    // Clear screen
-    printf("\e[1;1H\e[2J");
     for(int y=0; y<state->height; ++y) {
         for(int x=0; x<state->width; ++x) {
-            char c = (cello_get(state, x, y)) ? 'O' : '.';
+            char c = (cello_get(state, x, y)) ? '@' : '.';
             printf("%c ", c);
         }
         printf("\n");
@@ -101,20 +110,11 @@ int cello_count_neighbors(cello_state *state, int x, int y)
         count += cello_get(state, x-1, y-1); // Top left
         count += cello_get(state, x  , y-1); // Top
         count += cello_get(state, x+1, y-1); // Top rigth
-        count += cello_get(state, x-1, y+1); // Top left
-        count += cello_get(state, x  , y+1); // Top
-        count += cello_get(state, x+1, y+1); // Top rigth
+        count += cello_get(state, x-1, y+1); // Bottom left
+        count += cello_get(state, x  , y+1); // Bottom
+        count += cello_get(state, x+1, y+1); // Bottom rigth
     }
     return count;
-}
-
-void cello_update(cello_state *state)
-{
-    for(int y=0; y<state->height; ++y) {
-        for(int x=0; x<state->width; ++x) {
-            state->update_cell_fn(state, x, y);
-        }
-    }
 }
 
 /*
@@ -125,5 +125,15 @@ void cello_swap(cello_state *state)
     unsigned char tmp = state->current_mask;
     state->current_mask = state->next_mask;
     state->next_mask = tmp;
+}
+
+void cello_update(cello_state *state)
+{
+    for(int y=0; y<state->height; ++y) {
+        for(int x=0; x<state->width; ++x) {
+            state->update_cell_fn(state, x, y);
+        }
+    }
+    cello_swap(state);
 }
 
